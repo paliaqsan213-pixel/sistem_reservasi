@@ -31,11 +31,23 @@ export default function Profile({
             <h1 className="sr-only">Profile settings</h1>
 
             <div className="space-y-6">
-                <Heading
-                    variant="small"
-                    title="Profile"
-                    description="Update your name and email address"
-                />
+                <div className="flex items-center justify-between">
+                    <Heading
+                        variant="small"
+                        title="Profile"
+                        description={auth.user.role === 'admin' ? "Update your admin profile details" : "Update your name, email, phone and address details"}
+                    />
+                    {auth.user.role === 'admin' && (
+                        <div className="flex gap-2">
+                            <span className="inline-flex items-center rounded-md bg-orange-100 px-2.5 py-0.5 text-xs font-semibold text-orange-800 dark:bg-orange-950/40 dark:text-orange-300">
+                                Super Administrator
+                            </span>
+                            <span className="inline-flex items-center rounded-md bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800 dark:bg-green-950/40 dark:text-green-300">
+                                Status: Aktif
+                            </span>
+                        </div>
+                    )}
+                </div>
 
                 <Form
                     {...ProfileController.update.form()}
@@ -74,7 +86,8 @@ export default function Profile({
                                     className="mt-1 block w-full"
                                     defaultValue={auth.user.email}
                                     name="email"
-                                    required
+                                    required={auth.user.role !== 'admin'}
+                                    disabled={auth.user.role === 'admin'}
                                     autoComplete="username"
                                     placeholder="Email address"
                                 />
@@ -82,6 +95,44 @@ export default function Profile({
                                 <InputError
                                     className="mt-2"
                                     message={errors.email}
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="phone">Phone number</Label>
+
+                                <Input
+                                    id="phone"
+                                    type="tel"
+                                    className="mt-1 block w-full"
+                                    defaultValue={auth.user.phone || ''}
+                                    name="phone"
+                                    required
+                                    placeholder="Phone number"
+                                />
+
+                                <InputError
+                                    className="mt-2"
+                                    message={errors.phone}
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="address">Address</Label>
+
+                                <Input
+                                    id="address"
+                                    type="text"
+                                    className="mt-1 block w-full"
+                                    defaultValue={auth.user.address || ''}
+                                    name="address"
+                                    required
+                                    placeholder="Address"
+                                />
+
+                                <InputError
+                                    className="mt-2"
+                                    message={errors.address}
                                 />
                             </div>
 
