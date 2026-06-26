@@ -108,7 +108,7 @@ export default function JadwalIndex({ lapangans, jadwals, filters, selectedLapan
                                                         : 'border-neutral-200 bg-neutral-100 text-neutral-500 opacity-60'
                                             }`}
                                         >
-                                            <span className="font-bold text-lg">{jadwal.waktu_mulai.substring(0,5)}</span>
+                                            <span className="font-bold text-lg">{jadwal.slot_mulai.substring(0,5)}</span>
                                             <span className="text-xs mt-1 font-medium">
                                                 {jadwal.status === 'tersedia' ? 'Tersedia' : 
                                                  jadwal.status === 'dipesan' ? 'Dipesan' : 'Tdk Tersedia'}
