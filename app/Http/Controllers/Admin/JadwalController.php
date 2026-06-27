@@ -47,28 +47,23 @@ class JadwalController extends Controller
             'slot_selesai' => ['required', 'string'],
         ]);
 
-        $slotMulai = Carbon::parse($data['slot_mulai']);
-        $slotSelesai = Carbon::parse($data['slot_selesai']);
+        $slotMulai = Carbon::parse($data['tanggal'] . ' ' . $data['slot_mulai']);
+        $slotSelesai = Carbon::parse($data['tanggal'] . ' ' . $data['slot_selesai']);
 
         if ($slotSelesai->lte($slotMulai)) {
             return back()->withErrors(['slot_selesai' => 'Waktu selesai harus setelah waktu mulai.']);
         }
 
-        $durasiMenit = $slotMulai->diffInMinutes($slotSelesai);
-
-        // Check overlapping slots on the same court + date
+        // Check for any overlapping slots in the entire range
         $overlap = Jadwal::where('lapangan_id', $data['lapangan_id'])
             ->where('tanggal', $data['tanggal'])
             ->where(function ($query) use ($data) {
-                $query->where(function ($q) use ($data) {
-                    $q->where('slot_mulai', '<', $data['slot_selesai'])
+                $query->where('slot_mulai', '<', $data['slot_selesai'])
                       ->where('slot_selesai', '>', $data['slot_mulai']);
-                });
             })
             ->first();
 
         if ($overlap) {
-            // Check if conflict is with active reservation
             $hasReservation = Reservasi::where('jadwal_id', $overlap->id)
                 ->whereIn('status', ['pending', 'menunggu_verifikasi', 'dikonfirmasi'])
                 ->exists();
@@ -77,19 +72,37 @@ class JadwalController extends Controller
                 return back()->withErrors(['slot_mulai' => 'Jadwal bentrok dengan reservasi yang sudah ada.']);
             }
 
-            return back()->withErrors(['slot_mulai' => 'Slot waktu bertumpukan dengan jadwal lain.']);
+            return back()->withErrors(['slot_mulai' => 'Slot waktu bertumpukan dengan jadwal lain ('.$overlap->slot_mulai->format('H:i').' - '.$overlap->slot_selesai->format('H:i').').']);
         }
 
-        Jadwal::create([
-            'lapangan_id' => $data['lapangan_id'],
-            'tanggal' => $data['tanggal'],
-            'slot_mulai' => $data['slot_mulai'],
-            'slot_selesai' => $data['slot_selesai'],
-            'durasi_menit' => $durasiMenit,
-            'status' => 'tersedia',
-        ]);
+        // Auto-generate hourly slots from the given interval
+        $currentStart = $slotMulai->copy();
+        $created = 0;
 
-        return back()->with('success', 'Slot jadwal berhasil ditambahkan.');
+        while ($currentStart->lt($slotSelesai)) {
+            $currentEnd = $currentStart->copy()->addHour();
+
+            // Don't exceed the end time
+            if ($currentEnd->gt($slotSelesai)) {
+                $currentEnd = $slotSelesai->copy();
+            }
+
+            $durasiMenit = $currentStart->diffInMinutes($currentEnd);
+
+            Jadwal::create([
+                'lapangan_id' => $data['lapangan_id'],
+                'tanggal' => $data['tanggal'],
+                'slot_mulai' => $currentStart->format('H:i:s'),
+                'slot_selesai' => $currentEnd->format('H:i:s'),
+                'durasi_menit' => $durasiMenit,
+                'status' => 'tersedia',
+            ]);
+
+            $created++;
+            $currentStart = $currentEnd;
+        }
+
+        return back()->with('success', "Berhasil membuat {$created} slot jadwal per-jam.");
     }
 
     public function destroy($id)

@@ -24,6 +24,8 @@ class Jadwal extends Model
         'slot_selesai' => 'datetime',
     ];
 
+    protected $appends = ['durasi_label', 'jam_mulai', 'jam_selesai'];
+
     public function lapangan()
     {
         return $this->belongsTo(Lapangan::class);
@@ -46,5 +48,15 @@ class Jadwal extends Model
             return '1 jam';
         }
         return $jam . ' jam';
+    }
+
+    public function getJamMulaiAttribute(): string
+    {
+        return $this->slot_mulai ? $this->slot_mulai->format('H:i') : '';
+    }
+
+    public function getJamSelesaiAttribute(): string
+    {
+        return $this->slot_selesai ? $this->slot_selesai->format('H:i') : '';
     }
 }

@@ -17,6 +17,8 @@ interface Jadwal {
     tanggal: string;
     slot_mulai: string;
     slot_selesai: string;
+    jam_mulai: string;
+    jam_selesai: string;
     durasi_menit: number;
     status: 'tersedia' | 'dipesan' | 'tidak_tersedia';
 }
@@ -119,7 +121,7 @@ export default function Index({ lapangans, jadwals, filters, errors }: Props) {
                         <Card className="border-neutral-200 dark:border-neutral-800 shadow-sm">
                             <CardHeader>
                                 <CardTitle className="text-base font-bold">Tambah Slot Waktu</CardTitle>
-                                <CardDescription>Buat slot jam operasional baru untuk lapangan & tanggal terpilih.</CardDescription>
+                                <CardDescription>Masukkan rentang waktu operasional. Sistem akan otomatis membuat slot per-jam.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <form onSubmit={handleAddSlot} className="space-y-4">
@@ -196,10 +198,10 @@ export default function Index({ lapangans, jadwals, filters, errors }: Props) {
                                                 <tr key={j.id} className="bg-white dark:bg-neutral-950 hover:bg-neutral-50/50">
                                                     <td className="px-6 py-4 font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                                                         <Clock className="h-3.5 w-3.5 text-neutral-400" />
-                                                        {j.slot_mulai.substring(0, 5)}
+                                                        {j.jam_mulai}
                                                     </td>
                                                     <td className="px-6 py-4 font-semibold text-neutral-900 dark:text-white">
-                                                        {j.slot_selesai.substring(0, 5)}
+                                                        {j.jam_selesai}
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         {j.durasi_menit / 60} jam
