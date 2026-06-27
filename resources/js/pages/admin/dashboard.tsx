@@ -6,7 +6,7 @@ import { CalendarCheck, Clock, Landmark, Users, ArrowRight, Activity, Bell, Chec
 
 export default function AdminDashboard({ stats, perlu_verifikasi, activities }: any) {
     return (
-        <div className="p-6 flex flex-col gap-6 max-w-7xl mx-auto">
+        <div className="flex h-full flex-1 flex-col gap-6 p-6">
             <Head title="Admin Dashboard" />
 
             <div>

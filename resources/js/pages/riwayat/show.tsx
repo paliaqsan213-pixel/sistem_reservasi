@@ -16,7 +16,7 @@ export default function RiwayatShow({ reservasi }: any) {
     };
 
     return (
-        <div className="p-6 max-w-4xl mx-auto">
+        <div className="flex h-full flex-1 flex-col gap-6 p-6">
             <Head title={`Detail Reservasi - ${reservasi.kode_booking}`} />
 
             <div className="mb-6">

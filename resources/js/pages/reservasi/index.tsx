@@ -25,7 +25,7 @@ export default function ReservasiIndex({ lapangans }: { lapangans: Lapangan[] })
     };
 
     return (
-        <div className="p-6 max-w-5xl mx-auto">
+        <div className="flex h-full flex-1 flex-col gap-6 p-6">
             <Head title="Pilih Lapangan - Reservasi" />
 
             {/* Stepper */}
