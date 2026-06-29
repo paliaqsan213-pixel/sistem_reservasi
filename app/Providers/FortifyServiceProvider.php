@@ -21,7 +21,21 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(
+            \Laravel\Fortify\Contracts\RegisterResponse::class,
+            function () {
+                return new class implements \Laravel\Fortify\Contracts\RegisterResponse {
+                    public function toResponse($request)
+                    {
+                        \Illuminate\Support\Facades\Auth::logout();
+                        $request->session()->invalidate();
+                        $request->session()->regenerateToken();
+
+                        return redirect()->route('login')->with('status', 'Pendaftaran akun berhasil! Silakan login untuk melanjutkan.');
+                    }
+                };
+            }
+        );
     }
 
     /**

@@ -65,6 +65,17 @@ export default function Index({ lapangans, jadwals, filters, errors }: Props) {
         }
     };
 
+    const handleDeleteAllSlots = () => {
+        if (confirm('Apakah Anda yakin ingin menghapus SEMUA slot jadwal pada tanggal ini? Aksi ini tidak dapat dibatalkan.')) {
+            router.delete('/admin/jadwal/destroy-all', {
+                data: {
+                    lapangan_id: data.lapangan_id,
+                    tanggal: data.tanggal
+                }
+            });
+        }
+    };
+
     return (
         <>
             <Head title="Kelola Slot Jadwal" />
@@ -177,9 +188,21 @@ export default function Index({ lapangans, jadwals, filters, errors }: Props) {
                                         Menampilkan jadwal tanggal: <span className="font-semibold text-neutral-800 dark:text-neutral-200">{new Date(data.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
                                     </CardDescription>
                                 </div>
-                                <span className="text-xs text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded">
-                                    {jadwals.length} Slot
-                                </span>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded">
+                                        {jadwals.length} Slot
+                                    </span>
+                                    {jadwals.length > 0 && (
+                                        <Button 
+                                            variant="destructive" 
+                                            size="sm" 
+                                            onClick={handleDeleteAllSlots}
+                                            className="h-7 text-xs px-2 bg-red-600 hover:bg-red-700"
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5 mr-1" /> Hapus Semua
+                                        </Button>
+                                    )}
+                                </div>
                             </CardHeader>
                             <CardContent>
                                 <div className="relative overflow-x-auto rounded-lg border border-neutral-100 dark:border-neutral-900">

@@ -122,4 +122,42 @@ class JadwalController extends Controller
 
         return back()->with('success', 'Slot jadwal berhasil dihapus.');
     }
+
+    public function destroyAll(Request $request)
+    {
+        $data = $request->validate([
+            'lapangan_id' => ['required', 'exists:lapangans,id'],
+            'tanggal' => ['required', 'date'],
+        ]);
+
+        $jadwals = Jadwal::where('lapangan_id', $data['lapangan_id'])
+            ->where('tanggal', $data['tanggal'])
+            ->get();
+
+        if ($jadwals->isEmpty()) {
+            return back()->withErrors(['error' => 'Tidak ada jadwal untuk dihapus.']);
+        }
+
+        $deletedCount = 0;
+        $failedCount = 0;
+
+        foreach ($jadwals as $jadwal) {
+            $hasReservation = Reservasi::where('jadwal_id', $jadwal->id)
+                ->whereIn('status', ['pending', 'menunggu_verifikasi', 'dikonfirmasi'])
+                ->exists();
+
+            if (!$hasReservation && $jadwal->status === 'tersedia') {
+                $jadwal->delete();
+                $deletedCount++;
+            } else {
+                $failedCount++;
+            }
+        }
+
+        if ($failedCount > 0) {
+            return back()->with('success', "Berhasil menghapus {$deletedCount} slot. {$failedCount} slot gagal dihapus karena sudah memiliki reservasi aktif.");
+        }
+
+        return back()->with('success', "Berhasil menghapus semua ({$deletedCount}) slot jadwal pada tanggal tersebut.");
+    }
 }

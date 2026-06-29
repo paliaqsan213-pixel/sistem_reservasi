@@ -57,6 +57,7 @@ Route::middleware(['auth', 'verified', 'admin'])->group(function () {
 
     Route::get('/admin/jadwal', [AdminJadwalController::class, 'index'])->name('admin.jadwal.index');
     Route::post('/admin/jadwal', [AdminJadwalController::class, 'store'])->name('admin.jadwal.store');
+    Route::delete('/admin/jadwal/destroy-all', [AdminJadwalController::class, 'destroyAll'])->name('admin.jadwal.destroyAll');
     Route::delete('/admin/jadwal/{id}', [AdminJadwalController::class, 'destroy'])->name('admin.jadwal.destroy');
 
     Route::get('/admin/monitoring', [AdminMonitoringController::class, 'index'])->name('admin.monitoring.index');
