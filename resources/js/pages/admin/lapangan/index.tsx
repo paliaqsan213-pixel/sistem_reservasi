@@ -106,7 +106,7 @@ export default function Index({ lapangans }: Props) {
                         <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">Kelola Lapangan</h1>
                         <p className="text-sm text-neutral-500">Tambah, ubah, dan nonaktifkan lapangan futsal Tawang Alun.</p>
                     </div>
-                    <Button onClick={openAddDialog} className="bg-orange-650 hover:bg-orange-700 text-white gap-2 font-medium">
+                    <Button onClick={openAddDialog} className="bg-orange-600 hover:bg-orange-700 text-white gap-2 font-medium">
                         <Plus className="h-4 w-4" />
                         Tambah Lapangan
                     </Button>
@@ -249,7 +249,7 @@ export default function Index({ lapangans }: Props) {
                             <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={processing}>
                                 Batal
                             </Button>
-                            <Button type="submit" className="bg-orange-650 hover:bg-orange-700 text-white font-medium" disabled={processing}>
+                            <Button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white font-medium" disabled={processing}>
                                 {processing ? 'Menyimpan...' : 'Simpan'}
                             </Button>
                         </DialogFooter>

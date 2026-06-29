@@ -70,17 +70,6 @@ export default function Register({ passwordRules }: Props) {
                                 <InputError message={errors.phone} />
                             </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="address">Address</Label>
-                                <Input
-                                    id="address"
-                                    type="text"
-                                    required
-                                    name="address"
-                                    placeholder="Enter your address"
-                                />
-                                <InputError message={errors.address} />
-                            </div>
 
                             <div className="grid gap-2">
                                 <Label htmlFor="password">Password</Label>

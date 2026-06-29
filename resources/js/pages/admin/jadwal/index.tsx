@@ -158,7 +158,7 @@ export default function Index({ lapangans, jadwals, filters, errors }: Props) {
                                         </div>
                                     )}
 
-                                    <Button type="submit" className="w-full bg-orange-650 hover:bg-orange-700 text-white font-medium gap-2" disabled={processing}>
+                                    <Button type="submit" className="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium gap-2" disabled={processing}>
                                         <Plus className="h-4 w-4" />
                                         Tambah Slot
                                     </Button>
