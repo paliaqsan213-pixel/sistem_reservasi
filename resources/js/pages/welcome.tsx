@@ -16,11 +16,11 @@ export default function Welcome() {
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex justify-between h-16 items-center">
                             <div className="flex items-center gap-2">
-                                <div className="h-8 w-8 rounded-lg bg-green-600 flex items-center justify-center">
-                                    <Calendar className="h-5 w-5 text-white" />
+                                <div className="h-10 w-10 flex items-center justify-center overflow-hidden rounded-md bg-white">
+                                    <img src="/logo/logo.png" alt="Tawang Alun Futsal Logo" className="h-full w-full object-contain" />
                                 </div>
                                 <span className="font-bold text-xl tracking-tight text-neutral-900 dark:text-white">
-                                    Arena<span className="text-green-600">Booking</span>
+                                    Tawang Alun <span className="text-green-600">Futsal</span>
                                 </span>
                             </div>
                             
