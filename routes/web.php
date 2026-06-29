@@ -45,6 +45,8 @@ Route::middleware(['auth', 'verified', 'pelanggan'])->group(function () {
     Route::get('/riwayat/{id}', [RiwayatController::class, 'show'])->name('riwayat.show');
 
     Route::get('/jadwal', [PelangganJadwalController::class, 'index'])->name('jadwal.index');
+
+    Route::get('/api/greedy-slots', [ReservasiController::class, 'apiGreedySlots'])->name('api.greedy-slots');
 });
 
 // Admin Routes
@@ -55,6 +57,7 @@ Route::middleware(['auth', 'verified', 'admin'])->group(function () {
 
     Route::get('/admin/jadwal', [AdminJadwalController::class, 'index'])->name('admin.jadwal.index');
     Route::post('/admin/jadwal', [AdminJadwalController::class, 'store'])->name('admin.jadwal.store');
+    Route::delete('/admin/jadwal/destroy-all', [AdminJadwalController::class, 'destroyAll'])->name('admin.jadwal.destroyAll');
     Route::delete('/admin/jadwal/{id}', [AdminJadwalController::class, 'destroy'])->name('admin.jadwal.destroy');
 
     Route::get('/admin/monitoring', [AdminMonitoringController::class, 'index'])->name('admin.monitoring.index');
@@ -64,8 +67,5 @@ Route::middleware(['auth', 'verified', 'admin'])->group(function () {
     Route::post('/admin/verifikasi/{id}/konfirmasi', [AdminVerifikasiController::class, 'konfirmasi'])->name('admin.verifikasi.konfirmasi');
     Route::post('/admin/verifikasi/{id}/tolak', [AdminVerifikasiController::class, 'tolak'])->name('admin.verifikasi.tolak');
 });
-
-// Public / AJAX Endpoints
-Route::get('/api/greedy-slots', [ReservasiController::class, 'apiGreedySlots'])->name('api.greedy-slots');
 
 require __DIR__.'/settings.php';

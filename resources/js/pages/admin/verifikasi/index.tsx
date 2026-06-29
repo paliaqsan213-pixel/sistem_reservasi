@@ -215,7 +215,7 @@ export default function Index({ reservasis }: Props) {
                                                                 </div>
                                                             </div>
                                                             <Button asChild size="sm" variant="outline" className="gap-2">
-                                                                <a href={active.pembayaran.bukti_transfer} download target="_blank" rel="noopener noreferrer">
+                                                                <a href={`/storage/${active.pembayaran.bukti_transfer}`} download target="_blank" rel="noopener noreferrer">
                                                                     <Download className="h-4 w-4" />
                                                                     Unduh
                                                                 </a>
@@ -224,7 +224,7 @@ export default function Index({ reservasis }: Props) {
                                                     ) : (
                                                         <div className="relative overflow-hidden rounded-md border border-neutral-100 dark:border-neutral-900 flex justify-center bg-black/5">
                                                             <img
-                                                                src={active.pembayaran.bukti_transfer}
+                                                                src={`/storage/${active.pembayaran.bukti_transfer}`}
                                                                 alt="Bukti Transfer"
                                                                 className="max-h-[300px] object-contain hover:scale-105 transition-transform duration-300"
                                                             />

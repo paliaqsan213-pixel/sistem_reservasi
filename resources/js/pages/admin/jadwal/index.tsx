@@ -17,6 +17,8 @@ interface Jadwal {
     tanggal: string;
     slot_mulai: string;
     slot_selesai: string;
+    jam_mulai: string;
+    jam_selesai: string;
     durasi_menit: number;
     status: 'tersedia' | 'dipesan' | 'tidak_tersedia';
 }
@@ -60,6 +62,17 @@ export default function Index({ lapangans, jadwals, filters, errors }: Props) {
     const handleDeleteSlot = (id: number) => {
         if (confirm('Apakah Anda yakin ingin menghapus slot jadwal ini?')) {
             router.delete(`/admin/jadwal/${id}`);
+        }
+    };
+
+    const handleDeleteAllSlots = () => {
+        if (confirm('Apakah Anda yakin ingin menghapus SEMUA slot jadwal pada tanggal ini? Aksi ini tidak dapat dibatalkan.')) {
+            router.delete('/admin/jadwal/destroy-all', {
+                data: {
+                    lapangan_id: data.lapangan_id,
+                    tanggal: data.tanggal
+                }
+            });
         }
     };
 
@@ -119,7 +132,7 @@ export default function Index({ lapangans, jadwals, filters, errors }: Props) {
                         <Card className="border-neutral-200 dark:border-neutral-800 shadow-sm">
                             <CardHeader>
                                 <CardTitle className="text-base font-bold">Tambah Slot Waktu</CardTitle>
-                                <CardDescription>Buat slot jam operasional baru untuk lapangan & tanggal terpilih.</CardDescription>
+                                <CardDescription>Masukkan rentang waktu operasional. Sistem akan otomatis membuat slot per-jam.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <form onSubmit={handleAddSlot} className="space-y-4">
@@ -156,7 +169,7 @@ export default function Index({ lapangans, jadwals, filters, errors }: Props) {
                                         </div>
                                     )}
 
-                                    <Button type="submit" className="w-full bg-orange-650 hover:bg-orange-700 text-white font-medium gap-2" disabled={processing}>
+                                    <Button type="submit" className="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium gap-2" disabled={processing}>
                                         <Plus className="h-4 w-4" />
                                         Tambah Slot
                                     </Button>
@@ -175,9 +188,21 @@ export default function Index({ lapangans, jadwals, filters, errors }: Props) {
                                         Menampilkan jadwal tanggal: <span className="font-semibold text-neutral-800 dark:text-neutral-200">{new Date(data.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
                                     </CardDescription>
                                 </div>
-                                <span className="text-xs text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded">
-                                    {jadwals.length} Slot
-                                </span>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded">
+                                        {jadwals.length} Slot
+                                    </span>
+                                    {jadwals.length > 0 && (
+                                        <Button 
+                                            variant="destructive" 
+                                            size="sm" 
+                                            onClick={handleDeleteAllSlots}
+                                            className="h-7 text-xs px-2 bg-red-600 hover:bg-red-700"
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5 mr-1" /> Hapus Semua
+                                        </Button>
+                                    )}
+                                </div>
                             </CardHeader>
                             <CardContent>
                                 <div className="relative overflow-x-auto rounded-lg border border-neutral-100 dark:border-neutral-900">
@@ -196,10 +221,10 @@ export default function Index({ lapangans, jadwals, filters, errors }: Props) {
                                                 <tr key={j.id} className="bg-white dark:bg-neutral-950 hover:bg-neutral-50/50">
                                                     <td className="px-6 py-4 font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                                                         <Clock className="h-3.5 w-3.5 text-neutral-400" />
-                                                        {j.slot_mulai.substring(0, 5)}
+                                                        {j.jam_mulai}
                                                     </td>
                                                     <td className="px-6 py-4 font-semibold text-neutral-900 dark:text-white">
-                                                        {j.slot_selesai.substring(0, 5)}
+                                                        {j.jam_selesai}
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         {j.durasi_menit / 60} jam

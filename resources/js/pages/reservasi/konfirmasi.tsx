@@ -1,7 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, MapPin, Calendar, Clock, CreditCard } from 'lucide-react';
+import { CheckCircle2, MapPin, Calendar, Clock, CreditCard, Banknote } from 'lucide-react';
 
 interface Props {
     lapangan: {
@@ -9,6 +9,7 @@ interface Props {
         harga_per_jam: number;
     };
     jadwal: {
+        ids: number[];
         tanggal: string;
         waktu_mulai: string;
         waktu_selesai: string;
@@ -22,6 +23,16 @@ export default function Konfirmasi({ lapangan, jadwal, durasi_label, total_harga
 
     const submit = () => {
         post('/reservasi/konfirmasi');
+    };
+
+    const formatTanggal = (dateStr: string) => {
+        const date = new Date(dateStr + 'T00:00:00');
+        return date.toLocaleDateString('id-ID', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+        });
     };
 
     return (
@@ -72,7 +83,7 @@ export default function Konfirmasi({ lapangan, jadwal, durasi_label, total_harga
                             <Calendar className="h-5 w-5 text-neutral-400 mr-3 mt-0.5" />
                             <div>
                                 <p className="text-sm text-neutral-500">Tanggal Main</p>
-                                <p className="font-semibold text-neutral-800">{jadwal.tanggal}</p>
+                                <p className="font-semibold text-neutral-800">{formatTanggal(jadwal.tanggal)}</p>
                             </div>
                         </div>
 
@@ -82,6 +93,19 @@ export default function Konfirmasi({ lapangan, jadwal, durasi_label, total_harga
                                 <p className="text-sm text-neutral-500">Waktu & Durasi</p>
                                 <p className="font-semibold text-neutral-800">{jadwal.waktu_mulai} - {jadwal.waktu_selesai} WIB</p>
                                 <p className="text-sm text-neutral-500 mt-1">{durasi_label}</p>
+                            </div>
+                        </div>
+
+                        {/* Info Rekening */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex items-start">
+                                <Banknote className="h-5 w-5 text-blue-600 mr-3 mt-0.5" />
+                                <div>
+                                    <p className="text-sm font-semibold text-blue-800">Info Pembayaran</p>
+                                    <p className="text-sm text-blue-700 mt-1">Bank <strong>BRI</strong> - A.N. <strong>Tawang Alun Futsal Arena</strong></p>
+                                    <p className="text-sm font-mono font-bold text-blue-900 mt-1">1234-5678-9012</p>
+                                    <p className="text-xs text-blue-600 mt-2">Setelah konfirmasi, Anda akan diminta untuk upload bukti pembayaran.</p>
+                                </div>
                             </div>
                         </div>
 

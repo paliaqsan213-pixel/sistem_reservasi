@@ -1,7 +1,8 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Map, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
 
 interface Lapangan {
     id: number;
@@ -12,18 +13,19 @@ interface Lapangan {
 }
 
 export default function ReservasiIndex({ lapangans }: { lapangans: Lapangan[] }) {
-    const { post, processing } = useForm({
-        lapangan_id: '',
-    });
+    const [processing, setProcessing] = useState(false);
 
     const submit = (id: number) => {
-        post('/reservasi/pilih-lapangan', {
-            data: { lapangan_id: id }
+        setProcessing(true);
+        router.post('/reservasi/pilih-lapangan', {
+            lapangan_id: id
+        }, {
+            onFinish: () => setProcessing(false),
         });
     };
 
     return (
-        <div className="p-6 max-w-5xl mx-auto">
+        <div className="flex h-full flex-1 flex-col gap-6 p-6">
             <Head title="Pilih Lapangan - Reservasi" />
 
             {/* Stepper */}

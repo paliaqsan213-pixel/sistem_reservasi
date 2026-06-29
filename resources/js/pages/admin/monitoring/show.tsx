@@ -36,7 +36,7 @@ export default function MonitoringShow({ reservasi }: any) {
     };
 
     return (
-        <div className="p-6 max-w-5xl mx-auto flex flex-col gap-6">
+        <div className="flex h-full flex-1 flex-col gap-6 p-6">
             <Head title={`Detail Reservasi - ${reservasi.kode_booking}`} />
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

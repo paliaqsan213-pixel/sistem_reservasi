@@ -30,7 +30,7 @@ class ReservasiController extends Controller
         ]);
 
         $request->session()->put('reservasi.lapangan_id', $request->lapangan_id);
-        
+
         return redirect()->route('reservasi.step2');
     }
 
@@ -49,59 +49,43 @@ class ReservasiController extends Controller
         ]);
     }
 
+    /**
+     * API endpoint for fetching available slots using Greedy Scheduling.
+     */
     public function apiGreedySlots(Request $request, GreedySchedulingService $schedulingService)
     {
         $request->validate([
             'lapangan_id' => 'required|exists:lapangans,id',
             'tanggal' => 'required|date|after_or_equal:today',
-            'durasi' => 'required|integer|min:1|max:3',
+            'durasi' => 'required|integer|min:1|max:5',
         ]);
 
-        $durasi_menit = $request->durasi * 60;
-        
-        // Get recommendations from greedy algorithm
-        $recommendations = $schedulingService->getAvailableRecommendations(
+        $result = $schedulingService->getAvailableSlots(
             $request->lapangan_id,
             $request->tanggal,
-            $durasi_menit
+            $request->durasi
         );
 
-        // Get all slots for visual grid
-        $all_slots = Jadwal::where('lapangan_id', $request->lapangan_id)
-            ->where('tanggal', $request->tanggal)
-            ->where('durasi_menit', $durasi_menit)
-            ->orderBy('slot_mulai')
-            ->get();
-
-        $recommended_ids = $recommendations->pluck('id')->toArray();
-
-        $slots_data = $all_slots->map(function($slot) use ($recommended_ids) {
-            return [
-                'id' => $slot->id,
-                'slot_mulai' => $slot->slot_mulai->format('H:i'),
-                'slot_selesai' => $slot->slot_selesai->format('H:i'),
-                'status' => $slot->status, // tersedia, dipesan, tidak_tersedia
-                'is_optimal' => in_array($slot->id, $recommended_ids)
-            ];
-        });
-
         return response()->json([
-            'slots' => $slots_data,
-            'has_optimal' => count($recommended_ids) > 0
+            'slots' => $result['slots'],
+            'has_optimal' => count($result['recommended_ids']) > 0,
         ]);
     }
 
+    /**
+     * Handle multi-slot selection from pilih-waktu page.
+     * Receives an array of jadwal_ids for consecutive slot booking.
+     */
     public function pilihWaktu(Request $request)
     {
         $request->validate([
-            'jadwal_id' => 'required|exists:jadwals,id',
+            'jadwal_ids' => 'required|array|min:1',
+            'jadwal_ids.*' => 'required|integer|exists:jadwals,id',
             'tanggal' => 'required|date',
-            'durasi' => 'required|integer'
         ]);
 
-        $request->session()->put('reservasi.jadwal_id', $request->jadwal_id);
+        $request->session()->put('reservasi.jadwal_ids', $request->jadwal_ids);
         $request->session()->put('reservasi.tanggal', $request->tanggal);
-        $request->session()->put('reservasi.durasi', $request->durasi);
 
         return redirect()->route('reservasi.step3');
     }
@@ -109,25 +93,35 @@ class ReservasiController extends Controller
     public function step3(Request $request)
     {
         $lapangan_id = $request->session()->get('reservasi.lapangan_id');
-        $jadwal_id = $request->session()->get('reservasi.jadwal_id');
+        $jadwal_ids = $request->session()->get('reservasi.jadwal_ids');
 
-        if (!$lapangan_id || !$jadwal_id) {
+        if (!$lapangan_id || !$jadwal_ids || !is_array($jadwal_ids)) {
             return redirect()->route('reservasi.step1')->with('error', 'Sesi reservasi tidak lengkap. Silakan ulangi.');
         }
 
         $lapangan = Lapangan::findOrFail($lapangan_id);
-        $jadwal = Jadwal::findOrFail($jadwal_id);
-        
-        $durasi_jam = $request->session()->get('reservasi.durasi');
+
+        // Get the slots in order
+        $jadwals = Jadwal::whereIn('id', $jadwal_ids)
+            ->orderBy('slot_mulai')
+            ->get();
+
+        if ($jadwals->isEmpty()) {
+            return redirect()->route('reservasi.step2')->with('error', 'Jadwal tidak ditemukan.');
+        }
+
+        $durasi_jam = $jadwals->count();
         $total_harga = $lapangan->harga_per_jam * $durasi_jam;
+        $waktu_mulai = $jadwals->first()->slot_mulai->format('H:i');
+        $waktu_selesai = $jadwals->last()->slot_selesai->format('H:i');
 
         return Inertia::render('reservasi/konfirmasi', [
             'lapangan' => $lapangan,
             'jadwal' => [
-                'id' => $jadwal->id,
-                'tanggal' => $jadwal->tanggal->format('Y-m-d'),
-                'waktu_mulai' => $jadwal->slot_mulai->format('H:i'),
-                'waktu_selesai' => $jadwal->slot_selesai->format('H:i'),
+                'ids' => $jadwal_ids,
+                'tanggal' => $jadwals->first()->tanggal->format('Y-m-d'),
+                'waktu_mulai' => $waktu_mulai,
+                'waktu_selesai' => $waktu_selesai,
             ],
             'durasi_label' => $durasi_jam . ' Jam',
             'total_harga' => $total_harga
@@ -137,48 +131,59 @@ class ReservasiController extends Controller
     public function store(Request $request)
     {
         $lapangan_id = $request->session()->get('reservasi.lapangan_id');
-        $jadwal_id = $request->session()->get('reservasi.jadwal_id');
-        
-        if (!$lapangan_id || !$jadwal_id) {
+        $jadwal_ids = $request->session()->get('reservasi.jadwal_ids');
+
+        if (!$lapangan_id || !$jadwal_ids || !is_array($jadwal_ids)) {
             return redirect()->route('reservasi.step1')->with('error', 'Sesi reservasi telah berakhir.');
         }
 
         try {
             DB::beginTransaction();
 
-            // Select for update to prevent double booking race conditions
-            $jadwal = Jadwal::where('id', $jadwal_id)->lockForUpdate()->first();
+            // Lock all selected slots to prevent double booking
+            $jadwals = Jadwal::whereIn('id', $jadwal_ids)
+                ->lockForUpdate()
+                ->orderBy('slot_mulai')
+                ->get();
 
-            if (!$jadwal || $jadwal->status !== 'tersedia') {
-                DB::rollBack();
-                return redirect()->route('reservasi.step2')
-                    ->with('error', 'Maaf, jadwal ini baru saja dipesan oleh orang lain. Silakan pilih jadwal lain.');
+            // Verify all slots are still available
+            foreach ($jadwals as $jadwal) {
+                if ($jadwal->status !== 'tersedia') {
+                    DB::rollBack();
+                    return redirect()->route('reservasi.step2')
+                        ->with('error', 'Maaf, slot ' . $jadwal->slot_mulai->format('H:i') . ' - ' . $jadwal->slot_selesai->format('H:i') . ' baru saja dipesan oleh orang lain. Silakan pilih jadwal lain.');
+                }
             }
 
             $lapangan = Lapangan::findOrFail($lapangan_id);
-            $durasi_jam = $request->session()->get('reservasi.durasi');
+            $durasi_jam = $jadwals->count();
             $total_harga = $lapangan->harga_per_jam * $durasi_jam;
+
+            $waktu_mulai = $jadwals->first()->slot_mulai;
+            $waktu_selesai = $jadwals->last()->slot_selesai;
 
             // Create Reservasi
             $reservasi = Reservasi::create([
                 'user_id' => $request->user()->id,
                 'lapangan_id' => $lapangan_id,
-                'jadwal_id' => $jadwal_id,
+                'jadwal_id' => $jadwals->first()->id, // Primary jadwal reference
                 'kode_booking' => 'RSV-' . strtoupper(Str::random(6)) . '-' . time(),
-                'tanggal_reservasi' => now()->toDateString(),
-                'waktu_mulai' => $jadwal->slot_mulai,
-                'waktu_selesai' => $jadwal->slot_selesai,
+                'tanggal_reservasi' => $jadwals->first()->tanggal->toDateString(),
+                'waktu_mulai' => $waktu_mulai,
+                'waktu_selesai' => $waktu_selesai,
                 'total_harga' => $total_harga,
                 'status' => 'pending'
             ]);
 
-            // Update Jadwal Status
-            $jadwal->update(['status' => 'dipesan']);
+            // Mark ALL selected slots as booked
+            foreach ($jadwals as $jadwal) {
+                $jadwal->update(['status' => 'dipesan']);
+            }
 
             DB::commit();
 
             // Clear session
-            $request->session()->forget(['reservasi.lapangan_id', 'reservasi.jadwal_id', 'reservasi.tanggal', 'reservasi.durasi']);
+            $request->session()->forget(['reservasi.lapangan_id', 'reservasi.jadwal_ids', 'reservasi.tanggal']);
 
             return redirect()->route('reservasi.upload-bukti', $reservasi->id)
                 ->with('success', 'Reservasi berhasil dibuat! Silakan upload bukti pembayaran.');

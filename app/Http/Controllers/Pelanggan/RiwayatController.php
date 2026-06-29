@@ -86,7 +86,7 @@ class RiwayatController extends Controller
             'reservasi_id' => $reservasi->id,
             'bukti_transfer' => $path,
             'tanggal_upload' => now(),
-            'status' => 'menunggu_verifikasi'
+            'status' => 'menunggu'
         ]);
 
         $reservasi->update(['status' => 'menunggu_verifikasi']);

@@ -4,80 +4,105 @@ namespace App\Services;
 
 use App\Models\Jadwal;
 use App\Models\Reservasi;
-use Illuminate\Support\Str;
+use Illuminate\Support\Collection;
 
 class GreedySchedulingService
 {
     /**
-     * Get the optimal non-overlapping slots using Earliest Finish Time First (EFTF).
+     * Get all hourly slots for a given lapangan and date, with greedy recommendation.
+     * Greedy algorithm: Earliest Start Time first - recommends the earliest contiguous
+     * block of available slots that fits the requested duration.
      *
-     * @param array $slots Array of slot objects/arrays
-     * @return array Selected optimal slots
+     * @param int $lapanganId
+     * @param string $tanggal
+     * @param int $durasiJam Number of hours the customer wants to book
+     * @return array
      */
-    public function getOptimalSlots(array $slots): array
+    public function getAvailableSlots(int $lapanganId, string $tanggal, int $durasiJam = 1): array
     {
-        if (empty($slots)) {
-            return [];
-        }
-
-        // Normalize slot elements to objects
-        $normalized = [];
-        foreach ($slots as $slot) {
-            if (is_array($slot)) {
-                $normalized[] = (object) $slot;
-            } elseif (is_object($slot)) {
-                $normalized[] = $slot;
-            }
-        }
-
-        // Sort ascending based on slot_selesai (EFTF)
-        usort($normalized, function ($a, $b) {
-            return strcmp($a->slot_selesai, $b->slot_selesai);
-        });
-
-        $selected = [];
-        $selected[] = $normalized[0];
-        $finishTime = $normalized[0]->slot_selesai;
-
-        for ($i = 1; $i < count($normalized); $i++) {
-            $slot = $normalized[$i];
-            // If slot_mulai >= finish_time, no conflict, pick it
-            if (strcmp($slot->slot_mulai, $finishTime) >= 0) {
-                $selected[] = $slot;
-                $finishTime = $slot->slot_selesai;
-            }
-        }
-
-        return $selected;
-    }
-
-    /**
-     * Get available slots with 'optimal' flag based on durasi.
-     */
-    public function getAvailableRecommendations(int $lapanganId, string $tanggal, int $durasiJam): array
-    {
-        $slots = Jadwal::where('lapangan_id', $lapanganId)
+        // Get ALL slots for this lapangan + date, ordered by start time
+        $allSlots = Jadwal::where('lapangan_id', $lapanganId)
             ->where('tanggal', $tanggal)
-            ->where('status', 'tersedia')
-            ->where('durasi_menit', $durasiJam * 60)
             ->orderBy('slot_mulai')
             ->get();
 
-        if ($slots->isEmpty()) {
-            return [];
+        if ($allSlots->isEmpty()) {
+            return [
+                'slots' => [],
+                'recommended_ids' => [],
+            ];
         }
 
-        $optimalSlots = $this->getOptimalSlots($slots->toArray());
-        $optimalIds = array_column($optimalSlots, 'id');
+        // Find contiguous blocks of available slots using greedy approach
+        $recommendedIds = $this->findGreedyRecommendation($allSlots, $durasiJam);
 
-        $result = [];
-        foreach ($slots as $slot) {
-            $slotArray = $slot->toArray();
-            $slotArray['optimal'] = in_array($slot->id, $optimalIds);
-            $result[] = (object) $slotArray;
+        $slotsData = $allSlots->map(function ($slot) use ($recommendedIds) {
+            return [
+                'id' => $slot->id,
+                'slot_mulai' => $slot->slot_mulai->format('H:i'),
+                'slot_selesai' => $slot->slot_selesai->format('H:i'),
+                'status' => $slot->status,
+                'is_optimal' => in_array($slot->id, $recommendedIds),
+            ];
+        });
+
+        return [
+            'slots' => $slotsData->values()->toArray(),
+            'recommended_ids' => $recommendedIds,
+        ];
+    }
+
+    /**
+     * Greedy Algorithm: Earliest Start Time First
+     * Find the earliest contiguous block of `$durasiJam` available slots.
+     * This is the core greedy scheduling logic.
+     *
+     * Strategy: Iterate through slots sorted by start time. Find the first
+     * sequence of N consecutive available slots where each slot's end time
+     * matches the next slot's start time.
+     *
+     * @param Collection $allSlots All slots sorted by slot_mulai
+     * @param int $durasiJam Number of consecutive hours needed
+     * @return array IDs of recommended slots
+     */
+    private function findGreedyRecommendation(Collection $allSlots, int $durasiJam): array
+    {
+        // Filter only available slots
+        $availableSlots = $allSlots->filter(fn($s) => $s->status === 'tersedia')->values();
+
+        if ($availableSlots->count() < $durasiJam) {
+            // Not enough available slots for requested duration
+            // Return all available slots as recommendation
+            return $availableSlots->pluck('id')->toArray();
         }
 
-        return $result;
+        // Greedy: Find the earliest contiguous block of $durasiJam slots
+        for ($i = 0; $i <= $availableSlots->count() - $durasiJam; $i++) {
+            $block = [];
+            $isContiguous = true;
+
+            for ($j = 0; $j < $durasiJam; $j++) {
+                $block[] = $availableSlots[$i + $j];
+
+                if ($j > 0) {
+                    $prevEnd = $availableSlots[$i + $j - 1]->slot_selesai->format('H:i');
+                    $currStart = $availableSlots[$i + $j]->slot_mulai->format('H:i');
+
+                    if ($prevEnd !== $currStart) {
+                        $isContiguous = false;
+                        break;
+                    }
+                }
+            }
+
+            if ($isContiguous) {
+                // Found the earliest contiguous block - greedy choice!
+                return collect($block)->pluck('id')->toArray();
+            }
+        }
+
+        // No contiguous block found, recommend the first available slots
+        return $availableSlots->take($durasiJam)->pluck('id')->toArray();
     }
 
     /**
@@ -88,53 +113,5 @@ class GreedySchedulingService
         return Reservasi::where('jadwal_id', $jadwalId)
             ->whereIn('status', ['pending', 'menunggu_verifikasi', 'dikonfirmasi'])
             ->exists();
-    }
-
-    /**
-     * Get a fallback slot if the chosen one is already booked.
-     */
-    public function getFallbackSlot(int $lapanganId, string $tanggal, string $slotMulai): ?object
-    {
-        $targetTime = strtotime($slotMulai);
-
-        // Find duration from the requested slot (even if it is now booked/inactive)
-        $requestedSlot = Jadwal::where('lapangan_id', $lapanganId)
-            ->where('tanggal', $tanggal)
-            ->where('slot_mulai', $slotMulai)
-            ->first();
-
-        $durasiMenit = $requestedSlot ? $requestedSlot->durasi_menit : 60;
-
-        // Get available slots of same duration
-        $availableSlots = Jadwal::where('lapangan_id', $lapanganId)
-            ->where('tanggal', $tanggal)
-            ->where('status', 'tersedia')
-            ->where('durasi_menit', $durasiMenit)
-            ->get();
-
-        if ($availableSlots->isEmpty()) {
-            return null;
-        }
-
-        // Run greedy
-        $optimalSlots = $this->getOptimalSlots($availableSlots->toArray());
-
-        if (empty($optimalSlots)) {
-            return null;
-        }
-
-        // Find closest
-        $closestSlot = null;
-        $minDiff = null;
-
-        foreach ($optimalSlots as $slot) {
-            $diff = abs(strtotime($slot->slot_mulai) - $targetTime);
-            if ($minDiff === null || $diff < $minDiff) {
-                $minDiff = $diff;
-                $closestSlot = $slot;
-            }
-        }
-
-        return $closestSlot;
     }
 }
