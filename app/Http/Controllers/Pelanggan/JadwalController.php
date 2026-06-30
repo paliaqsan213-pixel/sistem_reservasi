@@ -26,7 +26,16 @@ class JadwalController extends Controller
                 $jadwals = Jadwal::where('lapangan_id', $selectedLapanganId)
                     ->whereDate('tanggal', $tanggal)
                     ->orderBy('slot_mulai')
-                    ->get();
+                    ->get()
+                    ->map(function ($jadwal) {
+                        return [
+                            'id' => $jadwal->id,
+                            'jam_mulai' => $jadwal->slot_mulai ? $jadwal->slot_mulai->format('H:i') : null,
+                            'jam_selesai' => $jadwal->slot_selesai ? $jadwal->slot_selesai->format('H:i') : null,
+                            'status' => $jadwal->status,
+                            'durasi_label' => $jadwal->durasi_label,
+                        ];
+                    });
             }
         }
 
