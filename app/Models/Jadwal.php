@@ -59,4 +59,23 @@ class Jadwal extends Model
     {
         return $this->slot_selesai ? $this->slot_selesai->format('H:i') : '';
     }
+
+    public function getStatusAttribute($value)
+    {
+        if ($value === 'tersedia') {
+            $now = now();
+            
+            // Check if date is strictly in the past
+            if ($this->tanggal->isPast() && !$this->tanggal->isToday()) {
+                return 'tidak_tersedia';
+            }
+            
+            // Check if date is today and time has passed
+            if ($this->tanggal->isToday() && $this->slot_mulai && $this->slot_mulai->format('H:i:s') <= $now->format('H:i:s')) {
+                return 'tidak_tersedia';
+            }
+        }
+
+        return $value;
+    }
 }
