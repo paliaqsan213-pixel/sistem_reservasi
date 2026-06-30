@@ -36,12 +36,12 @@ class VerifikasiController extends Controller
                 $reservasi->pembayaran->update(['status' => 'dikonfirmasi']);
             }
 
-            // Lock ALL scheduling slots permanently (tidak_tersedia)
+            // Lock ALL scheduling slots permanently (dipesan)
             \App\Models\Jadwal::where('lapangan_id', $reservasi->lapangan_id)
                 ->where('tanggal', $reservasi->tanggal_reservasi)
                 ->where('slot_mulai', '>=', $reservasi->waktu_mulai)
                 ->where('slot_selesai', '<=', $reservasi->waktu_selesai)
-                ->update(['status' => 'tidak_tersedia']);
+                ->update(['status' => 'dipesan']);
         });
 
         return redirect()->route('admin.verifikasi.index')->with('success', 'Pembayaran berhasil dikonfirmasi.');
