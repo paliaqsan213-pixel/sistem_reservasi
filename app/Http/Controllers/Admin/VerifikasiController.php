@@ -36,10 +36,12 @@ class VerifikasiController extends Controller
                 $reservasi->pembayaran->update(['status' => 'dikonfirmasi']);
             }
 
-            // Lock scheduling slot permanently (tidak_tersedia)
-            if ($reservasi->jadwal) {
-                $reservasi->jadwal->update(['status' => 'tidak_tersedia']);
-            }
+            // Lock ALL scheduling slots permanently (tidak_tersedia)
+            \App\Models\Jadwal::where('lapangan_id', $reservasi->lapangan_id)
+                ->where('tanggal', $reservasi->tanggal_reservasi)
+                ->where('slot_mulai', '>=', $reservasi->waktu_mulai)
+                ->where('slot_selesai', '<=', $reservasi->waktu_selesai)
+                ->update(['status' => 'tidak_tersedia']);
         });
 
         return redirect()->route('admin.verifikasi.index')->with('success', 'Pembayaran berhasil dikonfirmasi.');
@@ -65,10 +67,12 @@ class VerifikasiController extends Controller
                 $reservasi->pembayaran->update(['status' => 'ditolak']);
             }
 
-            // Open scheduling slot again (tersedia)
-            if ($reservasi->jadwal) {
-                $reservasi->jadwal->update(['status' => 'tersedia']);
-            }
+            // Open ALL scheduling slots again (tersedia)
+            \App\Models\Jadwal::where('lapangan_id', $reservasi->lapangan_id)
+                ->where('tanggal', $reservasi->tanggal_reservasi)
+                ->where('slot_mulai', '>=', $reservasi->waktu_mulai)
+                ->where('slot_selesai', '<=', $reservasi->waktu_selesai)
+                ->update(['status' => 'tersedia']);
         });
 
         return redirect()->route('admin.verifikasi.index')->with('success', 'Pembayaran berhasil ditolak.');
