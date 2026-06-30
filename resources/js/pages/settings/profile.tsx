@@ -35,7 +35,7 @@ export default function Profile({
                     <Heading
                         variant="small"
                         title="Profile"
-                        description={auth.user.role === 'admin' ? "Update your admin profile details" : "Update your name, email, phone and address details"}
+                        description={auth.user.role === 'admin' ? "Update your admin profile details" : "Update your name, email and phone details"}
                     />
                     {auth.user.role === 'admin' && (
                         <div className="flex gap-2">
@@ -117,24 +117,7 @@ export default function Profile({
                                 />
                             </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="address">Address</Label>
 
-                                <Input
-                                    id="address"
-                                    type="text"
-                                    className="mt-1 block w-full"
-                                    defaultValue={auth.user.address || ''}
-                                    name="address"
-                                    required
-                                    placeholder="Address"
-                                />
-
-                                <InputError
-                                    className="mt-2"
-                                    message={errors.address}
-                                />
-                            </div>
 
                             {mustVerifyEmail &&
                                 auth.user.email_verified_at === null && (
